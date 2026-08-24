@@ -1,0 +1,754 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>How the Quickstart Kit Works</title>
+<style>
+  :root{
+    color-scheme: light;
+    --surface:#fcfcfb; --surface-2:#f4f3f0; --text:#0b0b0b; --text-2:#52514e;
+    --muted:#898781; --grid:#e1e0d9; --border:rgba(11,11,11,0.10);
+    --blue:#2a78d6; --orange:#eb6834; --yellow:#eda100; --violet:#4a3aa7;
+    --good:#0ca30c; --critical:#d03b3b; --code-bg:#f4f3f0;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:where(:not([data-theme="light"])){
+      color-scheme: dark;
+      --surface:#1a1a19; --surface-2:#232322; --text:#ffffff; --text-2:#c3c2b7;
+      --muted:#898781; --grid:#2c2c2a; --border:rgba(255,255,255,0.10);
+      --blue:#3987e5; --orange:#d95926; --yellow:#c98500; --violet:#9085e9;
+      --good:#0ca30c; --critical:#e66767; --code-bg:#232322;
+    }
+  }
+  :root[data-theme="dark"]{
+    color-scheme: dark;
+    --surface:#1a1a19; --surface-2:#232322; --text:#ffffff; --text-2:#c3c2b7;
+    --muted:#898781; --grid:#2c2c2a; --border:rgba(255,255,255,0.10);
+    --blue:#3987e5; --orange:#d95926; --yellow:#c98500; --violet:#9085e9;
+    --good:#0ca30c; --critical:#e66767; --code-bg:#232322;
+  }
+  *{ box-sizing: border-box; }
+  body{ margin:0; background:var(--surface); color:var(--text); font-family: system-ui, -apple-system, "Segoe UI", sans-serif; line-height:1.6; }
+  .wrap{ max-width: 960px; margin: 0 auto; padding: 32px 20px 100px; }
+  header.hero{ padding: 40px 0 28px; border-bottom: 1px solid var(--grid); margin-bottom: 32px; }
+  .kicker{ color: var(--muted); font-size: 13px; text-transform: uppercase; letter-spacing: .06em; font-weight: 600; margin-bottom: 10px; }
+  h1{ font-size: clamp(26px, 4vw, 38px); margin: 0 0 14px; line-height:1.15; }
+  .sub{ color: var(--text-2); font-size: 17px; max-width: 680px; }
+  nav.toc{ background: var(--surface-2); border:1px solid var(--border); border-radius:10px; padding: 16px 20px; margin-bottom: 40px; font-size: 14px; }
+  nav.toc .toc-title{ font-weight:700; margin-bottom:8px; }
+  nav.toc ol{ margin:0; padding-left: 20px; columns: 2; column-gap: 24px; }
+  nav.toc li{ margin-bottom:4px; break-inside: avoid; }
+  nav.toc a{ color: var(--text-2); text-decoration:none; }
+  nav.toc a:hover{ color: var(--blue); text-decoration:underline; }
+  section{ margin: 52px 0; scroll-margin-top: 20px; }
+  h2{ font-size: 22px; margin: 0 0 6px; border-top: 3px solid var(--blue); padding-top: 12px; }
+  h2 .num{ color: var(--muted); font-weight:600; margin-right:8px; }
+  h3{ font-size: 16px; margin: 22px 0 10px; }
+  p{ margin: 12px 0; }
+  p.lede{ color: var(--text-2); }
+  ul, ol{ padding-left: 22px; }
+  li{ margin: 6px 0; }
+  code{ font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: .92em; background: var(--code-bg); padding: 1px 6px; border-radius: 5px; }
+  pre{ background: var(--code-bg); border:1px solid var(--border); border-radius:10px; padding: 16px 18px; overflow-x:auto; font-size: 13px; line-height:1.5; }
+  pre code{ background:none; padding:0; }
+
+  .callout{ border:1px solid var(--border); border-left: 4px solid var(--blue); background: var(--surface-2); border-radius: 8px; padding: 14px 18px; margin: 16px 0; font-size: 14.5px; }
+  .callout.warn{ border-left-color: var(--yellow); }
+  .callout.good{ border-left-color: var(--good); }
+  .callout .label{ font-weight:700; font-size:11.5px; text-transform:uppercase; letter-spacing:.04em; color: var(--text-2); margin-bottom:4px; }
+
+  /* diagram wrapper */
+  .diagram{ border:1px solid var(--border); border-radius:12px; background: var(--surface-2); padding: 20px; margin: 20px 0; overflow-x:auto; }
+  .diagram svg{ display:block; margin:0 auto; max-width:100%; height:auto; }
+  .diagram-caption{ text-align:center; font-size:12.5px; color:var(--muted); margin-top:10px; }
+
+  /* file cards */
+  .filecards{ display:grid; grid-template-columns: repeat(auto-fit, minmax(260px,1fr)); gap:14px; margin:18px 0; }
+  .filecard{ border:1px solid var(--border); border-radius:10px; padding:16px 18px; background: var(--surface-2); }
+  .filecard .fname{ font-family: ui-monospace, monospace; font-weight:700; font-size:14px; color: var(--blue); margin-bottom:6px; display:flex; align-items:center; gap:8px; }
+  .filecard .role{ display:inline-block; font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.03em; padding:2px 8px; border-radius:999px; color:#fff; margin-bottom:8px; }
+  .role-collect{ background: var(--good); }
+  .role-analyze{ background: var(--blue); }
+  .role-support{ background: var(--violet); }
+  .role-config{ background: var(--orange); }
+  .filecard p{ margin:6px 0 0; font-size:13.5px; color: var(--text-2); }
+
+  .steps{ border:1px solid var(--border); border-radius:10px; overflow:hidden; margin: 16px 0; }
+  .step{ display:flex; gap:14px; padding: 14px 18px; border-bottom:1px solid var(--grid); }
+  .step:last-child{ border-bottom:none; }
+  .step .n{ width:26px; height:26px; border-radius:50%; background: var(--surface-2); border:1px solid var(--border); display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; flex:0 0 auto; color: var(--text-2); }
+  .step .body{ flex:1; font-size: 14px; }
+  .step .body pre{ margin-top:8px; }
+
+  table{ width:100%; border-collapse:collapse; margin:16px 0; font-size: 13.5px; }
+  th, td{ text-align:left; padding:9px 10px; border-bottom:1px solid var(--grid); vertical-align:top; }
+  th{ color: var(--text-2); font-size:11.5px; text-transform:uppercase; letter-spacing:.03em; font-weight:700; }
+  tr:last-child td{ border-bottom:none; }
+  .tbl-wrap{ overflow-x:auto; border:1px solid var(--border); border-radius:10px; }
+  .tbl-wrap table{ margin:0; }
+  .tbl-wrap th, .tbl-wrap td{ padding:10px 14px; }
+
+  footer{ margin-top:64px; padding-top:20px; border-top:1px solid var(--grid); color: var(--muted); font-size:12.5px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="hero">
+    <div class="kicker">quickstart_kit — how it works</div>
+    <h1>What this actually does, file by file</h1>
+    <p class="sub">Before you run anything: what problem this solves, what each of the 7 files
+      is responsible for, how data actually flows between them, and the exact commands to run it.
+      Read this once and the whole system should click.</p>
+  </header>
+
+  <nav class="toc">
+    <div class="toc-title">Contents</div>
+    <ol>
+      <li><a href="#problem">The problem this solves</a></li>
+      <li><a href="#abstract">Abstract</a></li>
+      <li><a href="#relatedwork">Related work — where this sits in the literature</a></li>
+      <li><a href="#novel">What's actually novel here</a></li>
+      <li><a href="#methodology">Methodology summary</a></li>
+      <li><a href="#bigpicture">The big picture (diagram)</a></li>
+      <li><a href="#files">What each file does</a></li>
+      <li><a href="#inside">Inside the verdict (2 diagrams)</a></li>
+      <li><a href="#extras">The three extra checks beyond the core verdict</a></li>
+      <li><a href="#example">A worked example</a></li>
+      <li><a href="#allfiles">Sample input &amp; output — every file</a></li>
+      <li><a href="#limitations">Limitations — the honest ceiling</a></li>
+      <li><a href="#run">How to run it</a></li>
+    </ol>
+  </nav>
+
+  <section id="problem">
+    <h2><span class="num">01</span>The problem this solves</h2>
+    <p class="lede">Existing dark-web uptime monitors answer one question: is this site reachable
+      right now, yes or no. That's a binary flag on a timer.</p>
+    <p>That's not enough for an analyst. "The site is down" doesn't tell you whether to expect a
+      wave of vendor migration (exit scam), a law-enforcement press release (seizure), a
+      temporary blip (DDoS attack), or nothing at all because it just moved addresses (migration).
+      Four very different situations, one identical-looking symptom.</p>
+    <p>This kit watches a real <code>.onion</code> address over time and reads the <em>shape</em>
+      of its behavior — not just whether it's up, but how it went down, how often, and what its
+      content looked like — to guess which of those four situations is actually happening, and
+      explain exactly why it thinks so.</p>
+  </section>
+
+  <section id="abstract">
+    <h2><span class="num">02</span>Abstract</h2>
+    <p class="lede">The condensed version of the whole project, one paragraph. Full text lives
+      in <code>../abstract.txt</code> — this is that, lightly trimmed.</p>
+    <div class="callout">
+      Dark web marketplaces frequently go offline, but existing monitors treat this as a binary
+      signal — reachable or not — without explaining why. This project reframes monitoring as a
+      <strong>temporal pattern-classification problem</strong>: four candidate causes (exit scam,
+      law-enforcement seizure, DDoS-induced flapping, voluntary migration) are distinguished by
+      quantifiable features — onset abruptness via CUSUM changepoint detection, downtime duration,
+      flapping frequency, mirror-domain overlap — plus a passively-observable content signal
+      (bounded hash-and-pattern-match against known seizure-banner phrasing, since a takedown page
+      often still returns HTTP 200). An interpretable, rule-based classifier assigns a likely
+      cause, attaches a real numeric confidence score, and reports the specific evidence that
+      drove the decision. Validated 4/4 on synthetic timelines built to match each category, and
+      field-tested through a passive Tor-based monitor collecting real onion-service history
+      through the identical code. Positioned deliberately as a zero-cost, ethically passive
+      corroboration signal — not a replacement for commercial platforms that already fuse uptime
+      with blockchain and forum data — with two stated, sourced limitations bracketing its
+      reliability ceiling: blind to a covert takedown, foolable by a faked one.
+    </div>
+  </section>
+
+  <section id="relatedwork">
+    <h2><span class="num">03</span>Related work — where this sits in the literature</h2>
+    <p class="lede">Two studies are the closest prior art, and neither does what this does — but
+      one of them directly challenges the assumption this project's signatures rest on. Full
+      writeup: <code>../METHODOLOGY.md</code> §9.</p>
+    <div class="tbl-wrap">
+      <table>
+        <tr><th>Study</th><th>What it used</th><th>What it found</th></tr>
+        <tr>
+          <td>Wang, Arief &amp; Hernandez-Castro, <em>"Dark Ending"</em>, ICISSP 2023 (Best
+            Student Paper, University of Kent)</td>
+          <td>Weekly scraped <strong>content</strong> snapshots from 6 markets through closure</td>
+          <td>Their two LEA-takedown markets showed <strong>no</strong> flapping; their two
+            exit-scam markets <strong>were</strong> preceded by DDoS — the inverse of the
+            onset/flapping mapping this project's classifier encodes. Concluded there are "no
+            significant indicators" of impending closure in their measured signals.</td>
+        </tr>
+        <tr>
+          <td>ElBahrawy et al., <em>"Collective dynamics of dark web marketplaces"</em>,
+            Scientific Reports 10:18827 (2020)</td>
+          <td><strong>Blockchain</strong> transaction data — 133M Bitcoin transactions, 31
+            markets, 24 real closures classified</td>
+          <td>Police raid / exit scam / voluntary closure, from financial flows — not uptime.</td>
+        </tr>
+      </table>
+    </div>
+    <div class="callout warn">
+      <div class="label">Why this matters, stated plainly</div>
+      The nearest comparable study that actually checked found the assumed signatures can
+      <em>collide</em> in practice. That's not hidden here — it's why this project's own
+      real-data validation (METHODOLOGY.md §10–11) matters more than the synthetic 4/4, and why confidence
+      scores exist instead of bare labels.
+    </div>
+  </section>
+
+  <section id="novel">
+    <h2><span class="num">04</span>What's actually novel here</h2>
+    <p class="lede">Narrow and real, not a breakthrough — stated at that size on purpose.</p>
+    <p><strong>The core claim:</strong> to our knowledge, no prior academic work classifies
+      outage <em>cause</em> from temporal reachability signatures alone — no content scraping, no
+      blockchain access. Both studies above use richer data sources than this project does. That
+      gap is genuine but narrow, and it cuts both ways: this project also inherits no ground-truth
+      validation from either of them.</p>
+    <p>Below that headline claim, five specific engineering choices are each individually
+      well-established techniques, applied in combination to this problem for what appears to be
+      the first time here:</p>
+    <ul>
+      <li><strong>CUSUM changepoint detection</strong> (Page, 1954) in place of a fixed slope
+        threshold for onset abruptness — adapts to a signal's own noise level instead of a
+        hand-tuned constant.</li>
+      <li><strong>SimHash near-duplicate fingerprinting</strong> for content-drift detection —
+        tolerates routine noise (a changed login token) while still catching a real content swap,
+        instead of an exact hash that flips on any single byte.</li>
+      <li><strong>A small, from-scratch, fully auditable classifier</strong> as a secondary content
+        signal, deliberately not an embedding/deep model — zero new dependencies, every
+        prediction shows the specific words that drove it.</li>
+      <li><strong>Confidence as evidence fusion</strong> — a real combined score from independent
+        signals, instead of a hardcoded label per decision branch.</li>
+      <li><strong>A reference-panel confound control</strong> for Tor's own network-wide DDoS
+        periods — distinguishes a target-specific attack from a bad day for the whole network.</li>
+    </ul>
+    <div class="callout good">
+      <div class="label">The honest positioning (see §9 of METHODOLOGY.md)</div>
+      This is <em>not</em> pitched as competing with commercial/OSINT platforms that already fuse
+      uptime with blockchain and forum data — they're faster and richer where funded. The
+      defensible niche: a zero-cost passive corroboration signal for parties without that access,
+      fast deconfliction for anyone not read into a specific operation, and — the strongest
+      forward direction — generalizing beyond marketplaces to infrastructure like ransomware leak
+      sites, where content/blockchain signals may not exist at all.
+    </div>
+  </section>
+
+  <section id="methodology">
+    <h2><span class="num">05</span>Methodology summary</h2>
+    <p class="lede">The formal version, with every design decision justified, is
+      <code>../METHODOLOGY.md</code> (15 sections). This is the shape of it.</p>
+    <h3>The four features</h3>
+    <div class="tbl-wrap">
+      <table>
+        <tr><th>Feature</th><th>What it measures</th><th>How</th></tr>
+        <tr><td>Onset abruptness</td><td>Gradual decline vs. sudden drop</td><td>CUSUM changepoint on an activity/admin signal (synthetic pipeline only — see METHODOLOGY.md §6 for the honest real-data gap)</td></tr>
+        <tr><td>Total downtime</td><td>How long the service stayed down</td><td><code>sum(status == 0)</code></td></tr>
+        <tr><td>Transition count</td><td>Flapping frequency</td><td><code>sum(abs(diff(status)))</code></td></tr>
+        <tr><td>Mirror overlap</td><td>Hours a declared candidate mirror ran alongside the original before it died</td><td>Restricted to explicitly declared pairs + a visible recent launch — see METHODOLOGY.md §5's methodological correction</td></tr>
+      </table>
+    </div>
+    <h3>The decision procedure — fixed priority order</h3>
+    <div class="tbl-wrap">
+      <table>
+        <tr><th>Priority</th><th>Condition</th><th>Category</th></tr>
+        <tr><td>1</td><td>Seizure banner observed (direct content evidence)</td><td><code>le_seizure</code></td></tr>
+        <tr><td>2</td><td>Declared-pair mirror overlap</td><td><code>migration</code></td></tr>
+        <tr><td>3</td><td>No permanent outage, ≥4 transitions</td><td><code>ddos_attack</code></td></tr>
+        <tr><td>4</td><td>No permanent outage, &lt;4 transitions</td><td><code>stable_no_outage</code></td></tr>
+        <tr><td>5</td><td>CUSUM changepoint before outage</td><td><code>exit_scam</code></td></tr>
+        <tr><td>6</td><td>Stable right up to outage, no banner ever</td><td><code>exit_scam_or_le_seizure</code> (honest ambiguous case)</td></tr>
+      </table>
+    </div>
+    <p>Every branch is a plain <code>if</code>/<code>elif</code> chain, deliberately — not a
+      trained decision tree. With a handful of labeled examples to learn from, a trained tree
+      would just memorize; an explicit rule set is equally powerful at this data scale and fully
+      auditable, which matters more for a tool an analyst has to trust.</p>
+  </section>
+
+  <section id="bigpicture">
+    <h2><span class="num">06</span>The big picture</h2>
+    <p class="lede">Two programs you actually run, one file that connects them.</p>
+    <div class="diagram">
+      <svg viewBox="0 0 860 260" xmlns="http://www.w3.org/2000/svg" font-family="system-ui, sans-serif">
+        <defs>
+          <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0,0 L10,5 L0,10 z" style="fill:var(--muted)"></path>
+          </marker>
+        </defs>
+
+        <!-- onion site -->
+        <rect x="10" y="90" width="120" height="70" rx="10" style="fill:var(--surface);stroke:var(--muted);stroke-width:1.5"></rect>
+        <text x="70" y="118" text-anchor="middle" font-size="12" style="fill:var(--text)">Your target</text>
+        <text x="70" y="135" text-anchor="middle" font-size="11" style="fill:var(--text-2)">.onion site</text>
+        <text x="70" y="150" text-anchor="middle" font-size="10" style="fill:var(--muted)">(over Tor)</text>
+
+        <line x1="130" y1="125" x2="185" y2="125" stroke="var(--muted)" stroke-width="1.5" marker-end="url(#arrow)"></line>
+
+        <!-- monitor.py -->
+        <rect x="190" y="80" width="150" height="90" rx="10" style="fill:var(--good);opacity:0.14;stroke:var(--good);stroke-width:1.5"></rect>
+        <text x="265" y="112" text-anchor="middle" font-size="13" font-weight="700" style="fill:var(--text)">monitor.py</text>
+        <text x="265" y="130" text-anchor="middle" font-size="10.5" style="fill:var(--text-2)">checks it hourly,</text>
+        <text x="265" y="144" text-anchor="middle" font-size="10.5" style="fill:var(--text-2)">extracts signals</text>
+        <text x="265" y="158" text-anchor="middle" font-size="10" style="fill:var(--muted)">(runs on Tails)</text>
+
+        <line x1="340" y1="125" x2="395" y2="125" stroke="var(--muted)" stroke-width="1.5" marker-end="url(#arrow)"></line>
+
+        <!-- csv -->
+        <rect x="400" y="90" width="130" height="70" rx="10" style="fill:var(--surface);stroke:var(--muted);stroke-width:1.5" stroke-dasharray="4,3"></rect>
+        <text x="465" y="118" text-anchor="middle" font-size="12" font-weight="700" style="fill:var(--text)">uptime_log.csv</text>
+        <text x="465" y="135" text-anchor="middle" font-size="10.5" style="fill:var(--text-2)">grows one row</text>
+        <text x="465" y="149" text-anchor="middle" font-size="10.5" style="fill:var(--text-2)">every check</text>
+
+        <line x1="530" y1="125" x2="585" y2="125" stroke="var(--muted)" stroke-width="1.5" marker-end="url(#arrow)"></line>
+
+        <!-- analyze_real_log.py -->
+        <rect x="590" y="70" width="170" height="110" rx="10" style="fill:var(--blue);opacity:0.14;stroke:var(--blue);stroke-width:1.5"></rect>
+        <text x="675" y="100" text-anchor="middle" font-size="13" font-weight="700" style="fill:var(--text)">analyze_real_log.py</text>
+        <text x="675" y="120" text-anchor="middle" font-size="10.5" style="fill:var(--text-2)">reads the whole log,</text>
+        <text x="675" y="134" text-anchor="middle" font-size="10.5" style="fill:var(--text-2)">measures the shape,</text>
+        <text x="675" y="148" text-anchor="middle" font-size="10.5" style="fill:var(--text-2)">calls the classifier</text>
+        <text x="675" y="165" text-anchor="middle" font-size="10" style="fill:var(--muted)">(run any time)</text>
+
+        <line x1="760" y1="125" x2="810" y2="125" stroke="var(--muted)" stroke-width="1.5" marker-end="url(#arrow)"></line>
+
+        <!-- report -->
+        <rect x="815" y="85" width="0" height="0"></rect>
+        <text x="800" y="30" text-anchor="middle" font-size="11" style="fill:var(--text-2)">↓ prints to your terminal ↓</text>
+        <rect x="700" y="200" width="150" height="50" rx="10" style="fill:var(--violet);opacity:0.16;stroke:var(--violet);stroke-width:1.5"></rect>
+        <text x="775" y="222" text-anchor="middle" font-size="11.5" font-weight="700" style="fill:var(--text)">Report:</text>
+        <text x="775" y="238" text-anchor="middle" font-size="10.5" style="fill:var(--text-2)">cause + confidence + why</text>
+        <line x1="700" y1="200" x2="675" y2="180" stroke="var(--muted)" stroke-width="1.5" marker-end="url(#arrow)"></line>
+
+        <text x="465" y="220" text-anchor="middle" font-size="10.5" style="fill:var(--muted)">the ONLY thing passed between the two programs — no direct connection otherwise</text>
+      </svg>
+      <div class="diagram-caption">Two independent programs, connected only by the CSV file. You run monitor.py continuously in one terminal; you run analyze_real_log.py whenever you want a read-out, in a separate terminal, as many times as you like.</div>
+    </div>
+    <div class="callout">
+      <div class="label">The one thing to understand first</div>
+      <code>monitor.py</code> and <code>analyze_real_log.py</code> never talk to each other
+      directly. <code>monitor.py</code> only ever <em>appends</em> to
+      <code>uptime_log.csv</code>. <code>analyze_real_log.py</code> only ever <em>reads</em> it.
+      That's deliberate — you can stop and restart either one independently, and re-run the
+      analysis as many times as you want without touching the monitor at all.
+    </div>
+  </section>
+
+  <section id="files">
+    <h2><span class="num">07</span>What each file does</h2>
+    <p class="lede">7 files. Two you actually run. Four are support code the other two import.
+      One is a template you copy.</p>
+
+    <div class="filecards">
+      <div class="filecard">
+        <div class="fname">▶ monitor.py</div>
+        <span class="role role-collect">you run this</span>
+        <p><strong>Collects data.</strong> Connects to your <code>.onion</code> target through
+          Tor once per interval (hourly by default), records whether it responded and how fast,
+          then runs four lightweight content checks (via <code>signal_utils.py</code> and
+          <code>content_classifier.py</code> — see §08) and saves all of it, results only, as one
+          new row in <code>uptime_log.csv</code>. This is the only file that talks to the network,
+          and the only one that ever computes a content-type guess — <code>analyze_real_log.py</code>
+          just reads what it already decided.</p>
+      </div>
+
+      <div class="filecard">
+        <div class="fname">▶ analyze_real_log.py</div>
+        <span class="role role-analyze">you run this</span>
+        <p><strong>Reads the results.</strong> Loads the whole CSV, turns raw per-check rows into
+          an hourly up/down timeline, measures its shape (how it dropped, how often it flapped,
+          whether a declared mirror took over), and asks the classifier for a verdict. Prints a
+          plain-English report. Never touches the network.</p>
+      </div>
+
+      <div class="filecard">
+        <div class="fname">⚙ signal_utils.py</div>
+        <span class="role role-support">support code</span>
+        <p><strong>Content fingerprinting.</strong> Used at <em>both</em> stages, unlike
+          <code>content_classifier.py</code>: <code>monitor.py</code> calls it at collection time
+          to hash the page (two ways — exact and "fuzzy"/tolerant of small changes) and check the
+          text against known seizure-banner phrasing; <code>analyze_real_log.py</code> calls it
+          again at analysis time to compare those already-saved fuzzy fingerprints and detect
+          content drift. No network code, no stored state — pure functions either way.</p>
+      </div>
+
+      <div class="filecard">
+        <div class="fname">⚙ content_classifier.py</div>
+        <span class="role role-support">support code</span>
+        <p><strong>Guesses the page type.</strong> Also used by <code>monitor.py</code> at
+          collection time: a small trained model that buckets the page into "looks like a
+          seizure notice / error page / rebrand notice / normal page" — catching wording the
+          exact-match check in <code>signal_utils.py</code> has never seen before.</p>
+      </div>
+
+      <div class="filecard">
+        <div class="fname">⚙ downtime_cause_classifier.py</div>
+        <span class="role role-support">support code</span>
+        <p><strong>The core decision logic.</strong> Used by <code>analyze_real_log.py</code> at
+          analysis time: given the shape measurements, decides which of the four causes fits
+          best, in a fixed priority order (the exact table is in §05).</p>
+      </div>
+
+      <div class="filecard">
+        <div class="fname">⚙ confidence_scoring.py</div>
+        <span class="role role-support">support code</span>
+        <p><strong>How sure to be.</strong> Called from two different places (see §08's second
+          diagram): once inside <code>downtime_cause_classifier.py</code>'s decision itself, and
+          once more directly by <code>analyze_real_log.py</code> afterward to fold in evidence
+          only visible across multiple monitored sites. Turns evidence into a real 0–1 score,
+          not a hand-picked label.</p>
+      </div>
+
+      <div class="filecard">
+        <div class="fname">📝 targets_local.example.py</div>
+        <span class="role role-config">you copy this</span>
+        <p><strong>Template only.</strong> Copy it to <code>targets_local.py</code> and put your
+          real, authorized <code>.onion</code> address in it. <code>monitor.py</code> automatically
+          picks it up if it exists. Never committed to git — real addresses stay off the record.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="inside">
+    <h2><span class="num">08</span>Inside the verdict — two separate phases</h2>
+    <p class="lede">This is the part easiest to get wrong, so it's worth being precise:
+      <code>content_classifier.py</code> runs <strong>once, at collection time, inside
+      monitor.py</strong> — never again later. <code>analyze_real_log.py</code> only ever reads
+      the result it already saved. Two diagrams, because two different programs run them at two
+      different times.</p>
+
+    <h3>Phase 1 — collection time (runs inside monitor.py, once per check)</h3>
+    <div class="diagram">
+      <svg viewBox="0 0 780 190" xmlns="http://www.w3.org/2000/svg" font-family="system-ui, sans-serif">
+        <defs>
+          <marker id="arrowA" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0,0 L10,5 L0,10 z" style="fill:var(--muted)"></path>
+          </marker>
+        </defs>
+        <rect x="15" y="65" width="150" height="60" rx="10" style="fill:var(--good);opacity:0.14;stroke:var(--good);stroke-width:1.5"></rect>
+        <text x="90" y="90" text-anchor="middle" font-size="12" font-weight="700" style="fill:var(--text)">monitor.py</text>
+        <text x="90" y="107" text-anchor="middle" font-size="10" style="fill:var(--text-2)">just got a response</text>
+
+        <line x1="165" y1="80" x2="220" y2="35" stroke="var(--muted)" stroke-width="1.3" marker-end="url(#arrowA)"></line>
+        <line x1="165" y1="100" x2="220" y2="145" stroke="var(--muted)" stroke-width="1.3" marker-end="url(#arrowA)"></line>
+
+        <rect x="225" y="8" width="220" height="55" rx="10" style="fill:var(--violet);opacity:0.14;stroke:var(--violet);stroke-width:1.5"></rect>
+        <text x="335" y="30" text-anchor="middle" font-size="11.5" font-weight="700" style="fill:var(--text)">signal_utils.py</text>
+        <text x="335" y="47" text-anchor="middle" font-size="10" style="fill:var(--text-2)">exact hash, fuzzy hash, banner match</text>
+
+        <rect x="225" y="120" width="220" height="55" rx="10" style="fill:var(--violet);opacity:0.14;stroke:var(--violet);stroke-width:1.5"></rect>
+        <text x="335" y="142" text-anchor="middle" font-size="11.5" font-weight="700" style="fill:var(--text)">content_classifier.py</text>
+        <text x="335" y="159" text-anchor="middle" font-size="10" style="fill:var(--text-2)">"what type of page is this?"</text>
+
+        <line x1="445" y1="35" x2="520" y2="80" stroke="var(--muted)" stroke-width="1.3" marker-end="url(#arrowA)"></line>
+        <line x1="445" y1="147" x2="520" y2="100" stroke="var(--muted)" stroke-width="1.3" marker-end="url(#arrowA)"></line>
+
+        <rect x="525" y="65" width="230" height="60" rx="10" style="fill:var(--surface);stroke:var(--muted);stroke-width:1.5" stroke-dasharray="4,3"></rect>
+        <text x="640" y="90" text-anchor="middle" font-size="12" font-weight="700" style="fill:var(--text)">uptime_log.csv</text>
+        <text x="640" y="107" text-anchor="middle" font-size="10" style="fill:var(--text-2)">results saved as one new row</text>
+      </svg>
+      <div class="diagram-caption">These two files' answers become plain columns in the CSV — content_type_guess, content_type_confidence, content_sha256, etc. Nothing here runs again later; the CSV is the permanent record of what they decided in the moment.</div>
+    </div>
+
+    <h3>Phase 2 — analysis time (runs inside analyze_real_log.py, whenever you ask for a read-out)</h3>
+    <div class="diagram">
+      <svg viewBox="0 0 820 280" xmlns="http://www.w3.org/2000/svg" font-family="system-ui, sans-serif">
+        <defs>
+          <marker id="arrowB" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0,0 L10,5 L0,10 z" style="fill:var(--muted)"></path>
+          </marker>
+        </defs>
+
+        <rect x="15" y="105" width="150" height="60" rx="10" style="fill:var(--surface);stroke:var(--muted);stroke-width:1.5" stroke-dasharray="4,3"></rect>
+        <text x="90" y="130" text-anchor="middle" font-size="12" font-weight="700" style="fill:var(--text)">uptime_log.csv</text>
+        <text x="90" y="147" text-anchor="middle" font-size="10" style="fill:var(--text-2)">raw + already-guessed columns</text>
+
+        <line x1="165" y1="135" x2="220" y2="135" stroke="var(--muted)" stroke-width="1.3" marker-end="url(#arrowB)"></line>
+
+        <rect x="225" y="95" width="200" height="80" rx="10" style="fill:var(--blue);opacity:0.14;stroke:var(--blue);stroke-width:1.5"></rect>
+        <text x="325" y="120" text-anchor="middle" font-size="12" font-weight="700" style="fill:var(--text)">analyze_real_log.py</text>
+        <text x="325" y="138" text-anchor="middle" font-size="10" style="fill:var(--text-2)">measures the shape,</text>
+        <text x="325" y="152" text-anchor="middle" font-size="10" style="fill:var(--text-2)">reads back the saved guesses</text>
+        <text x="325" y="166" text-anchor="middle" font-size="10" style="fill:var(--text-2)">(no re-classifying)</text>
+
+        <line x1="425" y1="115" x2="480" y2="45" stroke="var(--muted)" stroke-width="1.2" marker-end="url(#arrowB)"></line>
+        <line x1="425" y1="135" x2="480" y2="135" stroke="var(--muted)" stroke-width="1.2" marker-end="url(#arrowB)"></line>
+        <line x1="425" y1="155" x2="480" y2="225" stroke="var(--muted)" stroke-width="1.2" marker-end="url(#arrowB)"></line>
+
+        <rect x="485" y="15" width="230" height="60" rx="10" style="fill:var(--violet);opacity:0.14;stroke:var(--violet);stroke-width:1.5"></rect>
+        <text x="600" y="38" text-anchor="middle" font-size="11.5" font-weight="700" style="fill:var(--text)">downtime_cause_classifier.py</text>
+        <text x="600" y="55" text-anchor="middle" font-size="10" style="fill:var(--text-2)">picks the cause (uses confidence_scoring internally)</text>
+
+        <rect x="485" y="105" width="230" height="60" rx="10" style="fill:var(--violet);opacity:0.14;stroke:var(--violet);stroke-width:1.5"></rect>
+        <text x="600" y="128" text-anchor="middle" font-size="11.5" font-weight="700" style="fill:var(--text)">confidence_scoring.py</text>
+        <text x="600" y="145" text-anchor="middle" font-size="10" style="fill:var(--text-2)">called AGAIN directly - adjusts the score using</text>
+        <text x="600" y="158" text-anchor="middle" font-size="10" style="fill:var(--text-2)">cross-site evidence classify() couldn't see</text>
+
+        <rect x="485" y="195" width="230" height="60" rx="10" style="fill:var(--violet);opacity:0.14;stroke:var(--violet);stroke-width:1.5"></rect>
+        <text x="600" y="218" text-anchor="middle" font-size="11.5" font-weight="700" style="fill:var(--text)">signal_utils.py</text>
+        <text x="600" y="235" text-anchor="middle" font-size="10" style="fill:var(--text-2)">compares fingerprints already stored,</text>
+        <text x="600" y="248" text-anchor="middle" font-size="10" style="fill:var(--text-2)">for the content-drift report line</text>
+
+        <line x1="715" y1="45" x2="770" y2="230" stroke="var(--muted)" stroke-width="1.2" marker-end="url(#arrowB)"></line>
+        <line x1="715" y1="135" x2="770" y2="230" stroke="var(--muted)" stroke-width="1.2" marker-end="url(#arrowB)"></line>
+        <line x1="715" y1="225" x2="750" y2="230" stroke="var(--muted)" stroke-width="1.2" marker-end="url(#arrowB)"></line>
+
+        <rect x="580" y="240" width="220" height="34" rx="8" style="fill:var(--good);opacity:0.14;stroke:var(--good);stroke-width:1.3"></rect>
+        <text x="690" y="262" text-anchor="middle" font-size="10.5" font-weight="700" style="fill:var(--text)">printed report</text>
+      </svg>
+      <div class="diagram-caption">confidence_scoring.py appears twice on purpose: once inside classify() (using only this one site's own evidence, every time), and — only for the ddos_attack and ambiguous exit_scam_or_le_seizure verdicts specifically, not every verdict — once more directly by analyze_real_log.py afterward, to fold in evidence classify() has no way to see on its own, like whether OTHER monitored sites were also degraded at the same time.</div>
+    </div>
+  </section>
+
+  <section id="extras">
+    <h2><span class="num">09</span>Three extra checks beyond the core verdict</h2>
+    <p class="lede">The four-cause verdict is the headline, but <code>analyze_real_log.py</code>
+      prints more than that when the evidence is there. Worth knowing about before you see them
+      in real output and wonder where they came from.</p>
+
+    <h3>1. Content-drift detection — catches wording the exact-match list has never seen</h3>
+    <p><code>signal_utils.py</code> compares each check's "fuzzy" fingerprint to the previous
+      one. A big drop in similarity means the page changed by more than routine noise (a login
+      token, a live counter) — and when it does, the classifier's stored guess for that specific
+      check gets attached to the report, so you learn <em>what kind</em> of change it looked
+      like, not just that something changed.</p>
+
+    <h3>2. The ambiguous-case HINT — a second opinion when the primary signal is silent</h3>
+    <p>When the verdict comes back <code>exit_scam_or_le_seizure</code> (the honest "can't tell"
+      case), <code>analyze_real_log.py</code> separately checks whether the content classifier
+      ever flagged <code>seizure_banner</code> at high confidence on an earlier check — even
+      though the exact-match banner list missed it. If so, that gets appended as a
+      <code>HINT</code>, pointing at the specific timestamp worth a manual look. It never changes
+      the verdict itself, only adds a pointer.</p>
+
+    <div class="callout">
+      <div class="label">Both of the above, together, in real captured output</div>
+      <pre><code>predicted cause: exit_scam_or_le_seizure  [confidence: low, score: 0.27]
+reason: ...the known ambiguous case... - HINT: no exact banner phrase matched,
+but the content classifier guessed seizure_banner at 100% confidence on the
+check at 2026-07-03T07:00:00+00:00 (driven by: has, permanently, taken,
+criminal, evidence) - worth a manual look, not confirmed
+content stability: 84% avg check-to-check similarity (1 significant change event(s) detected)
+  - content changed significantly at 2026-07-03 07:00:00+00:00 (similarity dropped to 47%)
+    - looks like: seizure_banner (100%, driven by: has, permanently, taken, criminal, evidence)</code></pre>
+      This is a real run's output (not hand-typed) against a page that said "infrastructure taken
+      into custody following a joint international investigation" — wording that matches zero
+      patterns in <code>signal_utils.py</code>'s exact list, but the classifier still recognized
+      it, flagged it, and pointed straight at the check that mattered.
+    </div>
+
+    <h3>3. Reference-panel and declared-mirror checks — only relevant with 2+ monitored sites</h3>
+    <p>Two optional, more advanced checks only activate if you're watching more than one site
+      at once — not required for a single target, but good to know they exist:</p>
+    <ul>
+      <li><strong>Reference panel</strong> (<code>REFERENCE_SITE_NAMES</code> in
+        <code>analyze_real_log.py</code>): if a <code>ddos_attack</code> verdict's target was
+        flapping at the same time an unrelated reference site was also down, confidence gets
+        discounted — it might be a bad Tor day for everyone, not an attack on your target
+        specifically.</li>
+      <li><strong>Declared mirror pairs</strong> (<code>KNOWN_MIRROR_PAIRS</code> in
+        <code>analyze_real_log.py</code>): migration detection only fires for pairs you
+        explicitly name as suspected mirrors of each other — never guessed automatically, to
+        avoid falsely linking two unrelated sites that just happened to both be up.</li>
+    </ul>
+  </section>
+
+  <section id="example">
+    <h2><span class="num">10</span>A worked example</h2>
+    <p class="lede">What actually lands in the CSV, and what comes back out — real captured
+      output, not a hand-typed approximation.</p>
+    <h3>One row monitor.py writes (simplified)</h3>
+    <pre><code>timestamp_utc: 2026-08-24T09:00:00+00:00
+site_name:     my_target
+status:        up
+response_ms:   640
+content_state: normal
+content_type_guess: normal_marketplace  (94% confidence)</code></pre>
+    <p>Hours later, the same site goes dark permanently. A later check might log:</p>
+    <pre><code>status: down
+error_class: connection_error</code></pre>
+    <h3>What analyze_real_log.py actually printed, for that exact scenario</h3>
+    <pre><code>my_target  (72h observed, 0h with no check data, forward-filled)
+  predicted cause: exit_scam_or_le_seizure  [confidence: low, score: 0.18]
+  reason: activity stayed flat/stable right up to an instantaneous, permanent
+  outage, and no seizure banner was ever observed - the known ambiguous case:
+  could be a seizure with no banner shown, or an exit scam with an instant
+  rather than gradual cutoff (needs a signal beyond uptime pings to resolve)</code></pre>
+    <p>That "ambiguous, low confidence" result isn't a failure — it's the system correctly
+      refusing to guess when the evidence genuinely doesn't distinguish an exit scam from an
+      unbannered seizure. If a takedown banner had been served instead, the verdict would be
+      <code>le_seizure</code> at high confidence (score 0.97 in practice), with the exact matched
+      phrase quoted in the reason. And if the classifier had spotted seizure-like wording the
+      exact-match list missed, you'd see the HINT from §09 attached to this same line.</p>
+  </section>
+
+  <section id="allfiles">
+    <h2><span class="num">11</span>Sample input &amp; output — every file</h2>
+    <p class="lede">§10 already showed <code>monitor.py</code> and <code>analyze_real_log.py</code>
+      end to end. The other 5 files aren't run directly — they're libraries of functions the two
+      runnable programs call. Every example below is real captured output from actually calling
+      that function, not a hand-typed guess.</p>
+
+    <h3>signal_utils.py — content fingerprinting functions</h3>
+    <pre><code>&gt;&gt;&gt; from signal_utils import content_hash, content_simhash, content_similarity, detect_seizure_banner
+
+&gt;&gt;&gt; content_hash(b"Welcome to Market. Browse categories. csrf_token=abc123")
+'8725c26d1652c2543176d1df614dfdde8788fd17c8bcc11215e4163aa23ddf54'
+# exact SHA-256 - flips completely if even one byte changes
+
+&gt;&gt;&gt; h1 = content_simhash("...csrf_token=abc123")
+&gt;&gt;&gt; h2 = content_simhash("...csrf_token=xyz789")   # only the token changed
+&gt;&gt;&gt; content_similarity(h1, h2)
+0.844   # still recognized as "basically the same page" - a changed token
+        # only shifts a few bits, unlike the exact hash above
+
+&gt;&gt;&gt; detect_seizure_banner("this domain has been seized by the fbi")
+(True, '(?:this|the|dieser|diese|dieses) (?:hidden service|hidden site|domain(?: '
+       'name)?|website|platform|market(?:place)?|service|site|dienst) (?:has '
+       'been|was|wurde) (?:permanently )?seized')</code></pre>
+
+    <h3>content_classifier.py — the trained content-type guesser</h3>
+    <pre><code>&gt;&gt;&gt; from content_classifier import classify_content_type
+&gt;&gt;&gt; classify_content_type(
+...     "this platform has been seized by the federal criminal police "
+...     "office in frankfurt am main")
+('seizure_banner', 1.0, ['seized', 'federal', 'criminal', 'police', 'office'])
+# (label, confidence 0-1, the specific words that drove the decision)</code></pre>
+
+    <h3>downtime_cause_classifier.py — the core decision logic</h3>
+    <pre><code>&gt;&gt;&gt; import numpy as np
+&gt;&gt;&gt; from downtime_cause_classifier import extract_features, classify
+&gt;&gt;&gt; status = np.array([1]*40 + [0]*10)          # up 40h, then down 10h
+&gt;&gt;&gt; banner = np.array([0]*40 + [1]*10)          # seizure banner served from the outage on
+
+&gt;&gt;&gt; feats = extract_features(status, activity=None, mirror_status=None, banner=banner)
+&gt;&gt;&gt; feats
+{'final_outage_start_hr': 40, 'effective_outage_start_hr': 40,
+ 'banner_detected': True, 'banner_onset_hr': 40, 'onset_abruptness': 'sudden',
+ 'cusum_declining': False, 'total_downtime_hrs': 10, 'num_transitions': 1,
+ 'mirror_overlap_hrs': 0, 'has_mirror_overlap': False, ...}
+
+&gt;&gt;&gt; classify(feats)
+('le_seizure', 'high', 'a known seizure-banner pattern was detected in the '
+ 'response body', 0.971)
+# (category, confidence_label, reason, confidence_score)</code></pre>
+
+    <h3>confidence_scoring.py — turning evidence into a real number</h3>
+    <pre><code>&gt;&gt;&gt; from confidence_scoring import ddos_confidence, score_to_label
+
+&gt;&gt;&gt; score, factors = ddos_confidence(n_transitions=50)   # no reference-panel data
+&gt;&gt;&gt; score, score_to_label(score)
+(1.0, 'high')
+
+&gt;&gt;&gt; score, factors = ddos_confidence(n_transitions=50, network_event_down_frac=0.42)
+&gt;&gt;&gt; score, score_to_label(score)
+(0.336, 'low')
+&gt;&gt;&gt; factors
+['50 up/down transitions',
+ 'reference panel also down 42% of the same window (discounts confidence - '
+ 'consistent with a network-wide event, not necessarily a target-specific attack)']
+# SAME 50 transitions, very different confidence - because a reference panel
+# that was ALSO down 42% of the time is real evidence this might not be an
+# attack on YOUR target specifically. See §09.</code></pre>
+
+    <h3>targets_local.example.py — the one file you edit, not run</h3>
+    <p>Input: you copy it to <code>targets_local.py</code> and edit the dictionary. Output: a
+      plain Python <code>dict</code> that <code>monitor.py</code> imports automatically if the
+      file exists.</p>
+    <pre><code>TARGETS = {
+    "test_duckduckgo": "http://duckduckgogg42xjoc72x3sjasowoarfbgcmvfimaftt6twagswzczad.onion",
+    "your_site_name": "http://YOUR_REAL_ONION_ADDRESS.onion",
+}</code></pre>
+  </section>
+
+  <section id="limitations">
+    <h2><span class="num">12</span>Limitations — the honest ceiling</h2>
+    <p class="lede">Two real, sourced, public-record cases bracket what this tool cannot do —
+      from opposite directions. Full writeup: <code>../METHODOLOGY.md</code> §10–11.</p>
+    <div class="tbl-wrap">
+      <table>
+        <tr><th>Case</th><th>What happened</th><th>What it means for this tool</th></tr>
+        <tr>
+          <td><strong>Hansa, 2017</strong><br>(Operation Bayonet)</td>
+          <td>Dutch police secretly seized and <em>operated</em> Hansa for nearly a month before
+            its own eventual shutdown. Public reporting describes "perfect, uninterrupted uptime"
+            throughout.</td>
+          <td>A reachability-only classifier watching Hansa during that window would report
+            <code>stable_no_outage</code> — <strong>correctly</strong>, by its own signal, since
+            there was no outage to observe. <strong>Blind to a covert takedown.</strong></td>
+        </tr>
+        <tr>
+          <td><strong>ALPHV/BlackCat, March 2024</strong></td>
+          <td>The ransomware group's own operators posted a <em>recycled copy</em> of a real
+            December 2023 law-enforcement seizure banner as cover for an exit scam (kept a ~$22M
+            ransom instead of paying their affiliate). Europol, DOJ, and the UK NCA all denied
+            involvement.</td>
+          <td>Run through this project's logic, that fake banner matches <code>le_seizure</code>
+            at high confidence — <strong>incorrectly</strong>. Nothing here verifies a banner's
+            authenticity, only its text. <strong>Foolable by a fake overt one.</strong></td>
+        </tr>
+      </table>
+    </div>
+    <p>Together: this tool can be blind to a real covert seizure, and fooled by a fake overt one.
+      Stated here, and on the poster, as the two headline limitations — not because they're the
+      only ones, but because they're the sharpest, most concrete illustration of where the
+      reliability ceiling actually sits.</p>
+  </section>
+
+  <section id="run">
+    <h2><span class="num">13</span>How to run it</h2>
+    <p class="lede">Full command list lives in <code>QUICKSTART.txt</code> in this same folder —
+      this is the same steps with a bit more of the "why" attached.</p>
+    <div class="steps">
+      <div class="step">
+        <div class="n">1</div>
+        <div class="body">One-time setup — creates an isolated Python environment and installs
+          the three packages this kit needs:
+          <pre><code>cd ~/Persistent/quickstart_kit
+python3 -m venv venv
+source venv/bin/activate
+pip install requests pysocks pandas</code></pre>
+        </div>
+      </div>
+      <div class="step">
+        <div class="n">2</div>
+        <div class="body">Tell it what to watch — copy the template and put your real, authorized
+          address in it:
+          <pre><code>cp targets_local.example.py targets_local.py
+# then edit targets_local.py</code></pre>
+        </div>
+      </div>
+      <div class="step">
+        <div class="n">3</div>
+        <div class="body">Smoke test — one check, confirms Tor + the code work together:
+          <pre><code>python3 monitor.py --once</code></pre>
+        </div>
+      </div>
+      <div class="step">
+        <div class="n">4</div>
+        <div class="body">Start real collection — leave this running in its own terminal:
+          <pre><code>python3 monitor.py --loop --interval 3600</code></pre>
+        </div>
+      </div>
+      <div class="step">
+        <div class="n">5</div>
+        <div class="body">Whenever you want a read-out (in a <em>second</em> terminal, after
+          activating the same venv) — safe to re-run as often as you like, it only reads:
+          <pre><code>python3 analyze_real_log.py</code></pre>
+        </div>
+      </div>
+    </div>
+    <div class="callout good">
+      <div class="label">The mental model to keep</div>
+      One terminal is always <em>collecting</em> (step 4, left running for hours/days). A second
+      terminal is where you occasionally ask <em>"what do we know so far?"</em> (step 5). They
+      never block each other.
+    </div>
+  </section>
+
+  <footer>
+    Part of the "It's Down — But Why?" IISc/CAICS poster project. For security notes, ethics
+    scope, and troubleshooting, see <code>../tor_monitor_kit/tails_setup_guide.html</code> and
+    <code>../METHODOLOGY.md</code>.
+  </footer>
+
+</div>
+</body>
+</html>

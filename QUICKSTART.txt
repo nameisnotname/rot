@@ -1,0 +1,83 @@
+QUICKSTART - live monitoring on Tails
+======================================================================
+Everything in this folder is the minimum needed to (1) monitor a real
+.onion address and (2) get a result from it. No plotting, no test
+scripts, no docs bloat - just copy, install, edit, run.
+
+For the full picture (security notes, what each column means, why
+things are built this way) see ../tor_monitor_kit/tails_setup_guide.html
+and ../METHODOLOGY.md. This file is deliberately just the commands.
+
+
+ONE-TIME SETUP (a few minutes, mostly waiting on `pip install` over Tor)
+----------------------------------------------------------------------
+1. Boot Tails from your pendrive, unlock Persistent Storage.
+
+2. Copy this whole "quickstart_kit" folder into ~/Persistent/
+
+3. Open a Terminal:
+
+    cd ~/Persistent/quickstart_kit
+    python3 -m venv venv
+    source venv/bin/activate
+    pip install requests pysocks pandas
+
+   That's the full dependency list - no numpy/matplotlib install needed,
+   pandas pulls numpy in automatically, and nothing here plots anything.
+   You only do this step ONCE. Every future session, just:
+
+    cd ~/Persistent/quickstart_kit
+    source venv/bin/activate
+
+
+CONFIGURE YOUR REAL TARGET (one-time, or whenever you add a site)
+----------------------------------------------------------------------
+4. cp targets_local.example.py targets_local.py
+
+5. Edit targets_local.py, replace the placeholder line with your real,
+   authorized .onion address:
+
+    TARGETS = {
+        "test_duckduckgo": "http://duckduckgogg42xjoc72x3sjasowoarfbgcmvfimaftt6twagswzczad.onion",
+        "your_site_name": "http://YOUR_REAL_ONION_ADDRESS.onion",
+    }
+
+   Only paste addresses you've verified against a trusted source.
+   targets_local.py is gitignored at the repo root - it's safe there,
+   never push it, and don't need to worry about it if this repo is on
+   GitHub.
+
+
+RUN IT
+----------------------------------------------------------------------
+6. Smoke test - confirms Tor + the script work end to end:
+
+    python3 monitor.py --once
+
+   Expect a line like: [timestamp] test_duckduckgo -> up (http=200, ...)
+
+7. Start real monitoring (hourly, the safe default - do not shorten
+   this, see the ethics note in tails_setup_guide.html §7):
+
+    python3 monitor.py --loop --interval 3600
+
+   Leave this terminal open. Ctrl+C to stop. Every check appends one
+   row to uptime_log.csv in this folder.
+
+
+GET RESULTS (once you have 48h+ of data)
+----------------------------------------------------------------------
+8. In a NEW terminal (leave monitor.py running in the first one):
+
+    cd ~/Persistent/quickstart_kit
+    source venv/bin/activate
+    python3 analyze_real_log.py
+
+   Prints a predicted cause, a confidence score, and the reasoning for
+   every target with enough history. Re-run this any time - it just
+   reads whatever uptime_log.csv has accumulated so far.
+
+
+THAT'S THE WHOLE LOOP: setup once -> configure target -> smoke test ->
+start --loop and leave it running -> analyze_real_log.py whenever you
+want a read of what it's found so far.
