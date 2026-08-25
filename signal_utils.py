@@ -187,3 +187,45 @@ def classify_http_status(status_code):
     if status_code < 500:
         return "http_4xx"
     return "http_5xx"
+
+
+# ---------------------------------------------------------------------------
+# HTML-to-visible-text extraction (for content_classifier.py's input only)
+# ---------------------------------------------------------------------------
+# content_classifier.py was trained on short, clean prose sentences - it has
+# never seen a raw HTML document's shape. Feeding it raw markup (tag names,
+# attribute values, inline CSS/JS) is a real domain mismatch, not just a
+# small-corpus problem: on a real captured page, the word "hidden" showed up
+# ~200 times purely from ordinary CSS utility class names
+# (hidden-mobile/hidden-desktop/footer-hidden - completely standard
+# responsive-design convention), which happens to overlap with the
+# classifier's "hidden service" seizure-banner training phrasing and drove a
+# false seizure_banner guess at 100% confidence. Reproduced and confirmed
+# before writing this fix, not assumed. This function strips tags (and the
+# attributes living inside them) plus entire <script>/<style> blocks
+# (content included, not just the tags) so the classifier only ever sees
+# actual visible page text - matching what it was trained on.
+#
+# Deliberately NOT used for detect_seizure_banner() or content_simhash():
+# the banner-match patterns already tolerate intervening characters
+# (`.{0,80}`) and are independently measured at 1.00 precision/recall
+# (evaluate_content_signals.py) - changing that input isn't needed. Changing
+# content_simhash()'s input would also silently break drift comparisons for
+# any monitor.py deployment already mid-collection on the OLD (raw-HTML)
+# fingerprint space - a real live-data compatibility risk not worth taking
+# for a signal that isn't the one demonstrated to be broken.
+_SCRIPT_STYLE_RE = re.compile(r"<(script|style)[^>]*>.*?</\1>", re.DOTALL | re.IGNORECASE)
+_TAG_RE = re.compile(r"<[^>]+>")
+_WHITESPACE_RE = re.compile(r"\s+")
+
+
+def strip_html_to_text(html):
+    """Visible text only: removes <script>/<style> blocks (tag AND
+    content), then strips all remaining tags (which removes their
+    attributes too, since an attribute lives inside the tag's own
+    angle brackets), then collapses whitespace."""
+    if not html:
+        return ""
+    no_script_style = _SCRIPT_STYLE_RE.sub(" ", html)
+    no_tags = _TAG_RE.sub(" ", no_script_style)
+    return _WHITESPACE_RE.sub(" ", no_tags).strip()
