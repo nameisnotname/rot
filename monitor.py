@@ -95,6 +95,7 @@ from signal_utils import (
     content_hash,
     content_simhash,
     detect_seizure_banner,
+    strip_html_to_text,
 )
 
 # ---------------------------------------------------------------------------
@@ -189,7 +190,19 @@ def check_target(name, url):
         # so analyze_real_log.py can use it both to explain content-drift
         # events and as a corroborating hint in the exit-scam/seizure
         # ambiguous case - see METHODOLOGY.md.
-        ct_label, ct_confidence, ct_top_words = classify_content_type(text)
+        #
+        # IMPORTANT: fed stripped visible text, not raw HTML. The classifier
+        # was trained on short plain-prose examples - on a real captured
+        # page, feeding it raw markup let ordinary CSS utility class names
+        # (e.g. "hidden-mobile"/"hidden-desktop", standard responsive-design
+        # convention) get tokenized as if they were content, producing a
+        # confirmed false seizure_banner guess at 100% confidence (reproduced
+        # and fixed - see strip_html_to_text() in signal_utils.py). Only this
+        # call is affected: detect_seizure_banner() and content_simhash()
+        # above still see the raw text, unchanged, since neither was shown to
+        # have this problem and changing content_simhash's input mid-stream
+        # would break drift comparisons for any monitor already collecting.
+        ct_label, ct_confidence, ct_top_words = classify_content_type(strip_html_to_text(text))
         row["content_type_guess"] = ct_label or ""
         row["content_type_confidence"] = round(ct_confidence, 3) if ct_label else ""
         row["content_type_top_words"] = ",".join(ct_top_words)
