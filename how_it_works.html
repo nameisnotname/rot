@@ -1,3 +1,4 @@
+
 <!doctype html>
 <html lang="en">
 <head>
@@ -89,6 +90,13 @@
   .tbl-wrap table{ margin:0; }
   .tbl-wrap th, .tbl-wrap td{ padding:10px 14px; }
 
+  .glossary{ columns: 1; margin: 16px 0; }
+  @media (min-width: 720px){ .glossary{ columns: 2; column-gap: 28px; } }
+  .glossary .entry{ break-inside: avoid; margin: 0 0 16px; padding-bottom:12px; border-bottom:1px solid var(--grid); }
+  .glossary dt{ font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-weight:700; color: var(--blue); font-size:14px; }
+  .glossary dt .cat{ font-family: system-ui, sans-serif; font-weight:600; font-size:10px; text-transform:uppercase; letter-spacing:.03em; color: var(--muted); margin-left:8px; }
+  .glossary dd{ margin: 4px 0 0; font-size:13.5px; color: var(--text-2); }
+
   footer{ margin-top:64px; padding-top:20px; border-top:1px solid var(--grid); color: var(--muted); font-size:12.5px; }
 </style>
 </head>
@@ -114,11 +122,13 @@
       <li><a href="#bigpicture">The big picture (diagram)</a></li>
       <li><a href="#files">What each file does</a></li>
       <li><a href="#inside">Inside the verdict (2 diagrams)</a></li>
+      <li><a href="#commands">Command-by-command: exactly what runs</a></li>
       <li><a href="#extras">The three extra checks beyond the core verdict</a></li>
       <li><a href="#example">A worked example</a></li>
       <li><a href="#allfiles">Sample input &amp; output — every file</a></li>
       <li><a href="#limitations">Limitations — the honest ceiling</a></li>
       <li><a href="#run">How to run it</a></li>
+      <li><a href="#glossary">Appendix: glossary of terms</a></li>
     </ol>
   </nav>
 
@@ -497,8 +507,65 @@
     </div>
   </section>
 
+  <section id="commands">
+    <h2><span class="num">09</span>Command-by-command: exactly what runs</h2>
+    <p class="lede">You only ever type two commands. This is the complete, exact accounting of
+      what happens underneath each one — every file, every function, spelled out — so nothing
+      here is left implicit.</p>
+
+    <h3>Command 1: <code>python3 monitor.py --loop --interval 3600</code></h3>
+    <div class="tbl-wrap">
+      <table>
+        <tr><th>File</th><th>Used?</th><th>How</th></tr>
+        <tr><td><code>monitor.py</code></td><td>You run this</td><td>The script itself</td></tr>
+        <tr><td><code>content_classifier.py</code></td><td>✅ Yes</td><td><code>classify_content_type()</code> — guesses the page type on every check</td></tr>
+        <tr><td><code>signal_utils.py</code></td><td>✅ Yes</td><td><code>content_hash()</code>, <code>content_simhash()</code>, <code>detect_seizure_banner()</code>, <code>classify_http_status()</code>, <code>classify_request_error()</code> — all run on every check</td></tr>
+        <tr><td><code>targets_local.py</code></td><td>✅ Read (not run)</td><td>Imported once at startup for your <code>TARGETS</code> dict</td></tr>
+        <tr><td><code>downtime_cause_classifier.py</code></td><td>❌ No</td><td>Not imported by <code>monitor.py</code> at all</td></tr>
+        <tr><td><code>confidence_scoring.py</code></td><td>❌ No</td><td>Not imported by <code>monitor.py</code> at all</td></tr>
+      </table>
+    </div>
+    <p><strong>What actually happens:</strong> every hour, <code>monitor.py</code> fetches the
+      page, runs those two files' functions on the response, and writes exactly one new row to
+      <code>uptime_log.csv</code>. Collection never touches the classification or confidence
+      logic — those only exist to answer "what does this history mean," which isn't this
+      command's job.</p>
+
+    <h3>Command 2: <code>python3 analyze_real_log.py &lt;file.csv&gt;</code></h3>
+    <div class="tbl-wrap">
+      <table>
+        <tr><th>File</th><th>Used?</th><th>How</th></tr>
+        <tr><td><code>analyze_real_log.py</code></td><td>You run this</td><td>The script itself</td></tr>
+        <tr><td><code>downtime_cause_classifier.py</code></td><td>✅ Yes</td><td><code>extract_features()</code> + <code>classify()</code> — the actual cause decision</td></tr>
+        <tr><td><code>confidence_scoring.py</code></td><td>✅ Yes</td><td>Called from <em>inside</em> <code>classify()</code> every time; called a <strong>second</strong> time, directly by <code>analyze_real_log.py</code> itself, only for the <code>ddos_attack</code> or ambiguous verdict specifically — not every run</td></tr>
+        <tr><td><code>signal_utils.py</code></td><td>✅ Yes</td><td><code>content_similarity()</code> — compares fingerprints already stored, for the "content stability" line</td></tr>
+        <tr><td><code>content_classifier.py</code></td><td>❌ No</td><td>Already did its job during collection (Command 1) — this only <em>reads</em> the <code>content_type_guess</code> column it wrote back then, never re-classifies</td></tr>
+      </table>
+    </div>
+    <p><strong>What actually happens:</strong> reads the whole CSV, turns it into an hourly
+      timeline, measures its shape, hands that to the classifier, and prints the report — cause,
+      confidence, reason, plus the content-stability line. That report text is the entire output
+      of this command; nothing else is written or changed anywhere.</p>
+
+    <h3>The 2 files neither command touches automatically</h3>
+    <div class="tbl-wrap">
+      <table>
+        <tr><th>File</th><th>When it's actually used</th></tr>
+        <tr><td><code>generate_test_log.py</code></td><td>Only when <em>you</em> run it by hand to make a synthetic test CSV — not part of the real pipeline at all</td></tr>
+        <tr><td><code>targets_local.example.py</code></td><td>Only once, when you <code>cp</code> it to <code>targets_local.py</code> — never imported directly by anything, it's a template you copy, not code that runs</td></tr>
+      </table>
+    </div>
+
+    <div class="callout good">
+      <div class="label">The one-sentence summary</div>
+      Typing 2 commands runs 5 of the 7 files. <code>signal_utils.py</code> is the only file
+      <em>both</em> commands actually use — once for collection-time fingerprinting, once more
+      for analysis-time drift comparison, two different functions from the same file.
+    </div>
+  </section>
+
   <section id="extras">
-    <h2><span class="num">09</span>Three extra checks beyond the core verdict</h2>
+    <h2><span class="num">10</span>Three extra checks beyond the core verdict</h2>
     <p class="lede">The four-cause verdict is the headline, but <code>analyze_real_log.py</code>
       prints more than that when the evidence is there. Worth knowing about before you see them
       in real output and wonder where they came from.</p>
@@ -551,7 +618,7 @@ content stability: 84% avg check-to-check similarity (1 significant change event
   </section>
 
   <section id="example">
-    <h2><span class="num">10</span>A worked example</h2>
+    <h2><span class="num">11</span>A worked example</h2>
     <p class="lede">What actually lands in the CSV, and what comes back out — real captured
       output, not a hand-typed approximation.</p>
     <h3>One row monitor.py writes (simplified)</h3>
@@ -576,12 +643,12 @@ error_class: connection_error</code></pre>
       unbannered seizure. If a takedown banner had been served instead, the verdict would be
       <code>le_seizure</code> at high confidence (score 0.97 in practice), with the exact matched
       phrase quoted in the reason. And if the classifier had spotted seizure-like wording the
-      exact-match list missed, you'd see the HINT from §09 attached to this same line.</p>
+      exact-match list missed, you'd see the HINT from §10 attached to this same line.</p>
   </section>
 
   <section id="allfiles">
-    <h2><span class="num">11</span>Sample input &amp; output — every file</h2>
-    <p class="lede">§10 already showed <code>monitor.py</code> and <code>analyze_real_log.py</code>
+    <h2><span class="num">12</span>Sample input &amp; output — every file</h2>
+    <p class="lede">§11 already showed <code>monitor.py</code> and <code>analyze_real_log.py</code>
       end to end. The other 5 files aren't run directly — they're libraries of functions the two
       runnable programs call. Every example below is real captured output from actually calling
       that function, not a hand-typed guess.</p>
@@ -646,7 +713,7 @@ error_class: connection_error</code></pre>
  'consistent with a network-wide event, not necessarily a target-specific attack)']
 # SAME 50 transitions, very different confidence - because a reference panel
 # that was ALSO down 42% of the time is real evidence this might not be an
-# attack on YOUR target specifically. See §09.</code></pre>
+# attack on YOUR target specifically. See §10.</code></pre>
 
     <h3>targets_local.example.py — the one file you edit, not run</h3>
     <p>Input: you copy it to <code>targets_local.py</code> and edit the dictionary. Output: a
@@ -659,7 +726,7 @@ error_class: connection_error</code></pre>
   </section>
 
   <section id="limitations">
-    <h2><span class="num">12</span>Limitations — the honest ceiling</h2>
+    <h2><span class="num">13</span>Limitations — the honest ceiling</h2>
     <p class="lede">Two real, sourced, public-record cases bracket what this tool cannot do —
       from opposite directions. Full writeup: <code>../METHODOLOGY.md</code> §10–11.</p>
     <div class="tbl-wrap">
@@ -693,7 +760,7 @@ error_class: connection_error</code></pre>
   </section>
 
   <section id="run">
-    <h2><span class="num">13</span>How to run it</h2>
+    <h2><span class="num">14</span>How to run it</h2>
     <p class="lede">Full command list lives in <code>QUICKSTART.txt</code> in this same folder —
       this is the same steps with a bit more of the "why" attached.</p>
     <div class="steps">
@@ -740,6 +807,169 @@ pip install requests pysocks pandas</code></pre>
       One terminal is always <em>collecting</em> (step 4, left running for hours/days). A second
       terminal is where you occasionally ask <em>"what do we know so far?"</em> (step 5). They
       never block each other.
+    </div>
+  </section>
+
+  <section id="glossary">
+    <h2><span class="num">15</span>Appendix: glossary of terms</h2>
+    <p class="lede">Every term used earlier in this document, in one place — grouped by domain
+      concept vs. project-specific concept, not in citation order.</p>
+
+    <h3>Dark web / Tor concepts</h3>
+    <dl class="glossary">
+      <div class="entry">
+        <dt>Tor <span class="cat">network</span></dt>
+        <dd>"The Onion Router" — an anonymity network that routes traffic through several relays
+          so neither end can easily identify the other. <code>.onion</code> addresses only exist
+          on this network.</dd>
+      </div>
+      <div class="entry">
+        <dt>.onion address <span class="cat">network</span></dt>
+        <dd>A special address reachable only through Tor, hosting a "hidden service" whose real
+          server location isn't exposed to visitors.</dd>
+      </div>
+      <div class="entry">
+        <dt>Onion / hidden service <span class="cat">network</span></dt>
+        <dd>A website or service hosted at a <code>.onion</code> address — what this kit
+          monitors.</dd>
+      </div>
+      <div class="entry">
+        <dt>Dark web marketplace <span class="cat">domain</span></dt>
+        <dd>An online marketplace reachable only via Tor (or similar), the kind of target this
+          project was originally framed around, before generalizing (§04).</dd>
+      </div>
+      <div class="entry">
+        <dt>Reachability <span class="cat">domain</span></dt>
+        <dd>The most basic possible signal about a target: did it respond at all, yes or no.
+          What every "binary" uptime monitor stops at — the whole premise of this project is
+          that reachability alone isn't enough.</dd>
+      </div>
+      <div class="entry">
+        <dt>Exit scam <span class="cat">cause</span></dt>
+        <dd>Market administrators voluntarily disable withdrawals and disappear with funds held
+          in escrow — no external interference, a deliberate disappearance.</dd>
+      </div>
+      <div class="entry">
+        <dt>(Law enforcement) seizure <span class="cat">cause</span></dt>
+        <dd>A government agency takes control of a service's infrastructure, ending its
+          operation — or, per §13's ALPHV case, sometimes only <em>claiming</em> to.</dd>
+      </div>
+      <div class="entry">
+        <dt>Seizure banner <span class="cat">signal</span></dt>
+        <dd>A notice page a seized service sometimes displays announcing the takedown — the
+          specific text <code>signal_utils.py</code>'s exact-match check looks for, and what
+          <code>content_classifier.py</code> tries to recognize even when the exact wording is
+          new (§04, §12 case 2).</dd>
+      </div>
+      <div class="entry">
+        <dt>DDoS (Distributed Denial of Service) <span class="cat">cause</span></dt>
+        <dd>A flood of traffic aimed at making a service unreachable — typically temporary,
+          producing the "flapping" signature below.</dd>
+      </div>
+      <div class="entry">
+        <dt>Flapping <span class="cat">signal</span></dt>
+        <dd>Repeatedly going up and down in quick succession — the DDoS signature, measured as
+          <code>num_transitions</code>.</dd>
+      </div>
+      <div class="entry">
+        <dt>Migration <span class="cat">cause</span></dt>
+        <dd>A market voluntarily moves to a new address (a "mirror"), the original being
+          retired — detected only for explicitly declared candidate pairs (see below), never
+          guessed automatically.</dd>
+      </div>
+    </dl>
+
+    <h3>This project's own technical terms</h3>
+    <dl class="glossary">
+      <div class="entry">
+        <dt>Onset abruptness <span class="cat">feature</span></dt>
+        <dd>How suddenly a service went from normal to fully down — "sudden" (no warning) vs.
+          "gradual" (a decline beforehand), measured via CUSUM below.</dd>
+      </div>
+      <div class="entry">
+        <dt>CUSUM changepoint detection <span class="cat">method</span></dt>
+        <dd>A statistical technique (Page, 1954) that flags when a signal's trend shifts, by
+          accumulating deviations from a baseline until they cross a threshold — used here
+          instead of a fixed slope cutoff so the decision adapts to the signal's own noise
+          level (§05).</dd>
+      </div>
+      <div class="entry">
+        <dt>Exact hash <span class="cat">signal</span></dt>
+        <dd>A SHA-256 fingerprint that changes completely if even one byte of the content
+          changes — good for "is this byte-identical to before," useless for "did it change a
+          little or a lot."</dd>
+      </div>
+      <div class="entry">
+        <dt>SimHash / fuzzy fingerprint <span class="cat">signal</span></dt>
+        <dd>A near-duplicate-detection hash where similar content produces similar (not
+          identical) fingerprints, so a changed login token doesn't look like a totally
+          different page the way an exact hash would (§10's function reference, §12's example).</dd>
+      </div>
+      <div class="entry">
+        <dt>Content drift <span class="cat">signal</span></dt>
+        <dd>A significant content change between two checks, detected by comparing SimHash
+          fingerprints — independent of whether an exact-match banner was ever found (§10).</dd>
+      </div>
+      <div class="entry">
+        <dt>Confidence score <span class="cat">output</span></dt>
+        <dd>A real 0.0–1.0 number for how strong the evidence behind a verdict is, computed by
+          combining signals — not a hand-picked "high/moderate/low" label (§08).</dd>
+      </div>
+      <div class="entry">
+        <dt>Evidence fusion <span class="cat">method</span></dt>
+        <dd>Combining multiple independent pieces of evidence (each pushing "for" or "against"
+          a hypothesis) into one confidence score, instead of relying on a single feature and a
+          fixed threshold.</dd>
+      </div>
+      <div class="entry">
+        <dt>HINT <span class="cat">output</span></dt>
+        <dd>A note appended to an otherwise-ambiguous verdict when the content classifier
+          independently suspected a seizure banner even though the exact-match check found
+          nothing — never changes the verdict itself, only flags it as worth a manual look
+          (§10).</dd>
+      </div>
+      <div class="entry">
+        <dt>Reference panel <span class="cat">method</span></dt>
+        <dd>Known-stable sites monitored alongside your real target, used to tell whether
+          flapping reflects a network-wide problem rather than an attack on your target
+          specifically (§10).</dd>
+      </div>
+      <div class="entry">
+        <dt>Declared mirror pair <span class="cat">method</span></dt>
+        <dd>Two site labels you explicitly tell the tool are suspected to be related — required
+          before migration detection will ever fire for them; never inferred automatically
+          (§10).</dd>
+      </div>
+      <div class="entry">
+        <dt>Corroborating signal <span class="cat">concept</span></dt>
+        <dd>Evidence that supports or adjusts a verdict without being its primary basis — can
+          raise or lower confidence, never overrides the primary decision.</dd>
+      </div>
+      <div class="entry">
+        <dt>Forward-filled (gap) <span class="cat">reporting</span></dt>
+        <dd>For hours with no check data at all (monitor wasn't running), the last known status
+          is carried forward, since there's no evidence anything changed — the hour count for
+          this is always reported separately, so gaps are never silently hidden.</dd>
+      </div>
+      <div class="entry">
+        <dt>Ambiguous case <span class="cat">verdict</span></dt>
+        <dd>Shorthand for <code>exit_scam_or_le_seizure</code> — the honest "can't tell" verdict,
+          reported instead of a forced guess when the evidence genuinely doesn't distinguish an
+          exit scam from an unbannered seizure.</dd>
+      </div>
+    </dl>
+
+    <h3>The five possible verdicts, as a quick reference</h3>
+    <div class="tbl-wrap">
+      <table>
+        <tr><th>Verdict</th><th>Meaning</th></tr>
+        <tr><td><code>le_seizure</code></td><td>A known seizure-banner phrase was directly matched in the page content</td></tr>
+        <tr><td><code>migration</code></td><td>A declared mirror visibly launched and took over before the original died</td></tr>
+        <tr><td><code>ddos_attack</code></td><td>Repeated flapping, then recovery — no permanent outage</td></tr>
+        <tr><td><code>exit_scam</code></td><td>A CUSUM-detected decline in activity before a permanent, unrecovered outage</td></tr>
+        <tr><td><code>exit_scam_or_le_seizure</code></td><td>The honest ambiguous case — permanent outage, no banner, no decline signal to distinguish the two</td></tr>
+        <tr><td><code>stable_no_outage</code></td><td>Still up throughout the observed window — nothing to classify yet</td></tr>
+      </table>
     </div>
   </section>
 
