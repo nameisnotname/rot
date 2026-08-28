@@ -252,11 +252,22 @@ please your you're we're has have had having
 """.split())
 
 # --- Evidence/confidence gate (see module docstring, "WHY 'uncertain' EXISTS") ---
-
+#
+# CONFIDENCE_FLOOR/MARGIN_FLOOR were originally 0.55/0.12, tuned only against
+# the labeled test set. On real production data (real .onion/clearnet pages,
+# not hand-written test sentences) that turned out stricter than intended -
+# e.g. DuckDuckGo's own official mirror had 5 real recognized words and a
+# clear win margin, but landed at 0.52 confidence, just under the old 0.55
+# floor, so it reported "uncertain" despite genuinely having enough to go
+# on. Relaxed to 0.50/0.10 after re-checking BOTH values together against
+# the full evaluate_content_signals.py suite (labeled set + all 7 real-world
+# regression cases) with the new numbers - still 100% accuracy, zero new
+# false positives anywhere. Re-run that script after touching these values;
+# do not loosen further without doing the same check.
 MAX_TOKEN_REPEAT = 4     # cap any single repeated word's influence on the score
 MIN_SIGNAL_WORDS = 3     # distinct non-stopword tokens actually seen in training data
-CONFIDENCE_FLOOR = 0.55  # winning class must clear this probability
-MARGIN_FLOOR = 0.12      # winning class must beat the runner-up by at least this much
+CONFIDENCE_FLOOR = 0.50  # winning class must clear this probability
+MARGIN_FLOOR = 0.10      # winning class must beat the runner-up by at least this much
 
 
 def _tokenize(text):
